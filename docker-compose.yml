@@ -1,0 +1,79 @@
+version: "3.8"
+services:
+  mongodb_intk:
+    image: mongo
+    restart: always
+    container_name: mongodb_intk
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=db
+    ports:
+      - "27017:27017"
+
+  server-oauth2-intk:
+    container_name: 'server-oauth2-intk'
+    image: 'configuration-intk/server-oauth2-intk:0.1'
+    ports:
+      - "8080:8080"
+    build:
+      context: .
+    depends_on:
+      - mongodb_intk
+    environment:
+      - host=mongodb_intk
+      - oauth2=http://server-oauth2-intk:8080
+      - userAdminLastName=Palma Lluen
+      - userAdminFirstName=Kevin Anderson
+      - userAdminDocumentType=DNI
+      - userAdminDocumentNumber=72657666
+      - userAdminPassword=Poolstar123
+      - userAdminNumberPhone=+51947275237
+      - userAdminEmail=umb.kevsidorov@gmail.com
+      - clientId=clientIntk2024
+      - clientSecret=poolstar123456**
+      - redirectUrl=https://oauthdebugger.com/debug
+      - codeVerifier=rhX5khmhBMKvrO5oKcAyLo1JTfwoj4azBh1LBj07neR
+
+  ms-products-intk:
+    container_name: 'ms-products-intk'
+    image: 'configuration-intk/ms-products-intk:0.2'
+    ports:
+      - "8090:8090"
+    build:
+      context: .
+    depends_on:
+      - server-oauth2-intk
+    environment:
+      - server-oauth2=http://server-oauth2-intk:8080
+      - host=mongodb_intk
+
+  ms-customer-intk:
+    container_name: 'ms-customer-intk'
+    image: 'configuration-intk/ms-customer-intk:0.1'
+    ports:
+      - "8091:8091"
+    build:
+      context: .
+    depends_on:
+      - server-oauth2-intk
+    environment:
+      - server-oauth2=http://server-oauth2-intk:8080
+      - host=mongodb_intk
+
+  ms-bff-customer-intk:
+    container_name: 'ms-bff-customer-intk'
+    image: 'configuration-intk/ms-bff-customer-intk:0.1'
+    ports:
+      - "8092:8092"
+    build:
+      context: .
+    depends_on:
+      - ms-products-intk
+      - ms-customer-intk
+    environment:
+      - server-oauth2=http://server-oauth2-intk:8080
+      - ms-customer=http://ms-customer-intk:8091/customer?id=
+      - ms-products=http://ms-products-intk:8090/products/find-by-id?id=
+      - password=intk_kev_2024
+      - salt=intk
